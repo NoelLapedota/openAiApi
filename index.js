@@ -1,38 +1,28 @@
 const express = require("express");
 require("dotenv").config();
 const { Configuration, OpenAIApi } = require("openai");
-
+const cors = require("cors");
 const app = express();
 
 app.use(express.json());
+app.use(cors());
 
 const configuration = new Configuration({
   apiKey: process.env.OPEN_AI_KEY,
 });
 const openai = new OpenAIApi(configuration);
+app.use(express.static(__dirname));
 
-app.post("/find-complexity", async (req, res) => {
+app.post("/", async (req, res) => {
   try {
-    const { prompt } = req.body;
-    const response = await openai.createCompletion({
-      model: "text-davinci-003",
-      prompt: `
-              ${prompt}
-      
-              The time complexity of this function is
-              ###
-            `,
-      max_tokens: 64,
-      temperature: 0,
-      top_p: 1.0,
-      frequency_penalty: 0.0,
-      presence_penalty: 0.0,
-      stop: ["\n"],
+    const { message } = req.body;
+    const response = await openai.createChatCompletion({
+      model: "gpt-3.5-turbo",
+      messages: [{ role: "user", content: message }],
     });
-
-    return res.status(200).json({
-      success: true,
-      data: response.data.choices[0].text,
+    console.log(response.data.choices[0].message.content);
+    res.status(200).json({
+      data: response.data.choices[0].message.content,
     });
   } catch (error) {
     return res.status(400).json({
@@ -44,6 +34,6 @@ app.post("/find-complexity", async (req, res) => {
   }
 });
 
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 3000;
 
 app.listen(port, () => console.log(`Server listening on port ${port}`));
